@@ -1,7 +1,7 @@
 services:
   bot:
     build: .
-    image: helpdesk-bot:v4
+    image: helpdesk-bot:${VERSION:-dev}
     container_name: helpdesk-bot
     env_file: .env
     environment:
