@@ -6,7 +6,7 @@ from aiogram.fsm.state import State, StatesGroup
 from keyboards.buttons import admin_it_keyboard, remove_it_keyboard
 from database.queries import (
     get_all_it_staff, add_it_staff, remove_it_staff,
-    get_approved_users_count
+    get_approved_users_count, get_invite_secret, set_invite_secret
 )
 
 router = Router()
@@ -64,10 +64,10 @@ async def show_invite_link(message: Message, role: str):
         await message.answer("⛔ Тільки для адміністраторів.")
         return
 
-    from config import INVITE_SECRET
+    invite_secret = await get_invite_secret()
     bot_info = await message.bot.get_me()
     count = await get_approved_users_count()
-    link = f"https://t.me/{bot_info.username}?start={INVITE_SECRET}"
+    link = f"https://t.me/{bot_info.username}?start={invite_secret}"
 
     await message.answer(
         f"🔗 <b>Посилання для реєстрації:</b>\n\n"
@@ -86,10 +86,10 @@ async def change_secret_start(message: Message, state: FSMContext, role: str):
         await message.answer("⛔ Тільки для адміністраторів.")
         return
 
-    from config import INVITE_SECRET
+    invite_secret = await get_invite_secret()
     await state.set_state(AdminForm.waiting_new_secret)
     await message.answer(
-        f"🔄 Поточний секрет: <code>{INVITE_SECRET}</code>\n\n"
+        f"🔄 Поточний секрет: <code>{invite_secret}</code>\n\n"
         f"Введіть новий секретний код (тільки латиниця та цифри):",
         parse_mode="HTML"
     )
@@ -101,7 +101,6 @@ async def change_secret_confirm(message: Message, state: FSMContext, role: str):
         return
 
     import re
-    import config
 
     new_secret = message.text.strip()
     if not re.match(r'^[a-zA-Z0-9_]{4,32}$', new_secret):
@@ -110,23 +109,8 @@ async def change_secret_confirm(message: Message, state: FSMContext, role: str):
         )
         return
 
-    # Оновлюємо в пам'яті
-    config.INVITE_SECRET = new_secret
-
-    # Оновлюємо в .env файлі
-    try:
-        with open(".env", "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        with open(".env", "w", encoding="utf-8") as f:
-            for line in lines:
-                if line.startswith("INVITE_SECRET="):
-                    f.write(f"INVITE_SECRET={new_secret}\n")
-                else:
-                    f.write(line)
-    except Exception as e:
-        await message.answer(f"⚠️ Секрет змінено в пам'яті, але не збережено у файл: {e}")
-        await state.clear()
-        return
+    # Зберігаємо в БД — переживає перезапуск і перебудову контейнера
+    await set_invite_secret(new_secret)
 
     await state.clear()
     bot_info = await message.bot.get_me()

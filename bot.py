@@ -1,5 +1,6 @@
 import asyncio
 import logging
+# import os
 
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
@@ -7,6 +8,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import BOT_TOKEN
+from database.models import init_db
 from middlewares.role import RoleMiddleware
 from handlers import user, it_staff, admin, journal, profile, export, ban, superadmin
 from scheduler import scheduler_loop
@@ -23,6 +25,8 @@ async def main():
         token=BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
+    await init_db()
+
     dp = Dispatcher(storage=MemoryStorage())
 
     dp.message.middleware(RoleMiddleware())

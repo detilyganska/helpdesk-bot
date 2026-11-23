@@ -5,20 +5,12 @@ load_dotenv()
 
 # Telegram
 BOT_TOKEN      = os.getenv("BOT_TOKEN")
-ADMIN_IDS      = list(map(int, os.getenv("ADMIN_IDS", "").split(",")))
+ADMIN_IDS      = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
 SUPER_ADMIN_ID = int(os.getenv("SUPER_ADMIN_ID", "0"))
 
-# MSSQL
-DB_SERVER = os.getenv("DB_SERVER", "localhost")
-DB_NAME   = os.getenv("DB_NAME", "it_support")
+# SQLite — шлях до файлу БД (у Docker: /app/data/helpdesk.db, папка data/ монтується з хоста)
+DB_PATH = os.getenv("DB_PATH", "data/helpdesk.db")
 
-DB_CONN_STR = (
-    f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-    f"SERVER={DB_SERVER};"
-    f"DATABASE={DB_NAME};"
-    f"Trusted_Connection=yes;"
-    f"TrustServerCertificate=yes;"
-)
-
-# Секретний код реєстрації
+# Початковий секретний код реєстрації — використовується лише при першому старті.
+# Далі секрет зберігається в БД (таблиця settings) і міняється з адмін-панелі.
 INVITE_SECRET = os.getenv("INVITE_SECRET", "ithelp2024")
