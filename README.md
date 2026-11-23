@@ -3,10 +3,11 @@
 Telegram-бот для прийому та обробки заявок технічної підтримки.
 
 ## Стек
-- Python 3.11
+- Python 3.12
 - aiogram 3.7
-- MSSQL (pyodbc)
+- SQLite (aiosqlite)
 - openpyxl
+- Docker / Docker Compose
 
 ## Ролі
 - **Суперадмін** — повний доступ, управління адмінами
@@ -25,7 +26,7 @@ helpdesk_bot/
 ├── scheduler.py            # фонові задачі
 ├── database/
 │   ├── connection.py
-│   ├── models.py           # SQL схема
+│   ├── models.py           # SQL схема + init_db()
 │   └── queries.py          # всі запити
 ├── handlers/
 │   ├── user.py             # flow користувача
@@ -40,23 +41,35 @@ helpdesk_bot/
 │   └── buttons.py
 ├── middlewares/
 │   └── role.py
-└── requirements.txt
+├── requirements.txt
+├── Dockerfile
+└── docker-compose.yml
 ```
 
-## Встановлення
+## Запуск у Docker (рекомендовано)
 
-1. Встановити Python 3.11
-2. Встановити ODBC Driver 17 for SQL Server
-3. Створити БД в MSSQL і виконати `database/models.py`
-4. Скопіювати `.env.example` → `.env` і заповнити
-5. Створити venv і встановити залежності:
+Потрібні Docker і Docker Compose plugin на Linux-сервері.
+
 ```bash
-py -3.11 -m venv venv
-venv\Scripts\pip install -r requirements.txt
+git clone https://github.com/detilyganska/helpdesk-bot.git
+cd helpdesk-bot
+cp .env.example .env      # заповнити BOT_TOKEN, ADMIN_IDS, SUPER_ADMIN_ID, INVITE_SECRET
+mkdir -p data
+docker compose up -d --build
 ```
-6. Запустити:
+
+- Таблиці БД створюються автоматично при першому старті.
+- Файл БД: `./data/helpdesk.db` — лежить на диску сервера і переживає перебудову контейнера.
+- Логи: `docker compose logs -f`
+- Оновлення: `git pull && docker compose up -d --build`
+
+## Локальний запуск без Docker
+
 ```bash
-venv\Scripts\python bot.py
+python3.12 -m venv venv
+venv/bin/pip install -r requirements.txt
+cp .env.example .env
+venv/bin/python bot.py
 ```
 
 ## .env
@@ -64,7 +77,6 @@ venv\Scripts\python bot.py
 BOT_TOKEN=...
 ADMIN_IDS=123456789
 SUPER_ADMIN_ID=123456789
-DB_SERVER=localhost
-DB_NAME=it_support
-INVITE_SECRET=ithelp2024
+INVITE_SECRET=change_me     # тільки початкове значення, далі міняється з адмін-панелі
+DB_PATH=data/helpdesk.db    # у Docker перевизначається в docker-compose.yml
 ```
