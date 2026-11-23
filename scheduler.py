@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from aiogram import Bot
 from config import ADMIN_IDS
-from database.connection import get_conn
+from database.connection import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -14,21 +14,19 @@ HANG_HOURS     = 4          # заявка вважається зависшою
 
 async def check_hanging_tickets(bot: Bot):
     """Перевіряє заявки що висять в роботі більше HANG_HOURS годин."""
-    conn = await get_conn()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT t.id, t.enddesk, t.updated_at, s.full_name "
-        "FROM tickets t "
-        "LEFT JOIN it_staff s ON s.id = t.assignee_id "
-        "WHERE t.status = 'in_progress' "
-        "AND t.updated_at <= DATEADD(hour, -?, GETDATE())",
-        HANG_HOURS
-    )
-    tickets = [
-        {"id": r[0], "enddesk": r[1], "updated_at": r[2], "assignee": r[3]}
-        for r in cur.fetchall()
-    ]
-    conn.close()
+    async with get_db() as db:
+        cur = await db.execute(
+            "SELECT t.id, t.enddesk, t.updated_at, s.full_name "
+            "FROM tickets t "
+            "LEFT JOIN it_staff s ON s.id = t.assignee_id "
+            "WHERE t.status = 'in_progress' "
+            "AND t.updated_at <= datetime('now','localtime', ?)",
+            (f"-{HANG_HOURS} hours",)
+        )
+        tickets = [
+            {"id": r[0], "enddesk": r[1], "updated_at": r[2], "assignee": r[3]}
+            for r in await cur.fetchall()
+        ]
 
     if not tickets:
         return

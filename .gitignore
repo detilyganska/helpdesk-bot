@@ -14,3 +14,6 @@ venv/
 # DB
 *.sqlite
 *.db
+
+# SQLite data folder (Docker volume)
+data/

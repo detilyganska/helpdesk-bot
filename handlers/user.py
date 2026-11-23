@@ -3,7 +3,6 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 
-from config import INVITE_SECRET
 from states import TicketForm
 from validators import validate_input, check_and_notify
 from keyboards.buttons import (
@@ -12,7 +11,7 @@ from keyboards.buttons import (
 )
 from database.queries import (
     get_categories, create_ticket, get_user_tickets,
-    is_approved_user, approve_user
+    is_approved_user, approve_user, get_invite_secret
 )
 from notifications import notify_it_new_ticket
 
@@ -55,7 +54,7 @@ async def cmd_start(message: Message, command: CommandObject, role: str, state: 
         return
 
     secret = command.args if command else None
-    if secret and secret == INVITE_SECRET:
+    if secret and secret == await get_invite_secret():
         await approve_user(user_id)
         await message.answer(
             "✅ <b>Доступ підтверджено!</b>\n\n"

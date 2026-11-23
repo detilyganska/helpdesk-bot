@@ -1,0 +1,21 @@
+services:
+  bot:
+    build: .
+    image: helpdesk-bot:v4
+    container_name: helpdesk-bot
+    env_file: .env
+    environment:
+      TZ: Europe/Kyiv
+    volumes:
+      - helpdesk-data:/app/data
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  helpdesk-data:
+    external: true
+    name: helpdesk
